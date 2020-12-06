@@ -15,6 +15,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.number.app.repertoire.model.model_number;
 
 import java.util.ArrayList;
@@ -24,25 +28,19 @@ public class MainActivity extends AppCompatActivity {
 
     RecyclerView recyclerView;
     numberListAdapter numberListAdapter;
-    List <model_number> modelNumberList = new ArrayList<>();
+    List<model_number> modelNumberList = new ArrayList<>();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Init();
-        //TEST
     }
 
     private void Init() {
 
 
-
-        modelNumberList.add(new model_number(112, "Pompiers", 1));
-        modelNumberList.add(new model_number(112, "Médical", 1));
-        modelNumberList.add(new model_number(101, "Police", 1));
-        modelNumberList.add(new model_number(112, "Général", 1));
+       get_data();
 
         recyclerView = (RecyclerView) findViewById(R.id.recycle_number);
         GridLayoutManager layoutManager = new GridLayoutManager(this, 3);
@@ -51,10 +49,37 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
 
 
-        numberListAdapter = new numberListAdapter( modelNumberList,this);
+        numberListAdapter = new numberListAdapter(modelNumberList, this);
         recyclerView.setAdapter(numberListAdapter);
 
 
+    }
+
+    private void get_data()
+    {
+        FirebaseDatabase.getInstance().getReference().child("BE").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists())
+                {
+                    for (DataSnapshot child : snapshot.getChildren())
+                    {
+                        String name = child.child("Name").getValue().toString();
+                        long number = Long.parseLong(child.child("Number").getValue().toString());
+                        long last_update = Long.parseLong(child.child("Last_update").getValue().toString());
+                        modelNumberList.add(new model_number(number, name,
+                                last_update));
+                        numberListAdapter.notifyDataSetChanged();
+                    }
+
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
     }
 }
 
